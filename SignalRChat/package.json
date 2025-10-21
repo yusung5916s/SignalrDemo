@@ -1,0 +1,7 @@
+{
+  "name": "signalrchat",
+  "version": "1.0.0",
+  "dependencies": {
+    "@microsoft/signalr": "8.0.0"
+  }
+}

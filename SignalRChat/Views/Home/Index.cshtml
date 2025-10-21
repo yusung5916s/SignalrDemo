@@ -2,30 +2,76 @@
     ViewData["Title"] = "Chat";
 }
 
-<div class="container">
-    <div class="row">&nbsp;</div>
-    <div class="row">
-        <div class="col-6">&nbsp;</div>
-        <div class="col-6">
-            User..........<input type="text" id="userInput" />
-            <br />
-            Message...<input type="text" id="messageInput" />
-            <input type="button" id="sendButton" value="Send Message" />
-        </div>
+<div id="username-container">
+    <h2>Enter your name</h2>
+    <input type="text" id="username-input" />
+    <button id="join-button">Join Chat</button>
+</div>
+
+<div id="chat-container" style="display: none;">
+    <div id="users-container">
+        <h2>Users</h2>
+        <ul id="users-list"></ul>
     </div>
-    <div class="row">
-        <div class="col-12">
-            <hr />
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-6">&nbsp;</div>
-        <div class="col-6">
-            <ul id="messagesList"></ul>
+    <div id="messages-container">
+        <h2>Messages</h2>
+        <ul id="messages-list"></ul>
+        <div id="message-input-container">
+            <input type="text" id="message-input" placeholder="Type your message..." />
+            <button id="send-button">Send</button>
         </div>
     </div>
 </div>
+
 @section Scripts {
     <script src="~/js/signalr.js"></script>
     <script src="~/js/chat.js"></script>
 }
+<style>
+    body {
+        font-family: sans-serif;
+    }
+
+    #username-container {
+        text-align: center;
+        margin-top: 50px;
+    }
+
+    #chat-container {
+        display: flex;
+        margin-top: 20px;
+    }
+
+    #users-container {
+        width: 200px;
+        border-right: 1px solid #ccc;
+        padding: 10px;
+    }
+
+    #messages-container {
+        flex: 1;
+        padding: 10px;
+    }
+
+    #messages-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+        overflow-y: scroll;
+        height: 300px;
+        border: 1px solid #ccc;
+    }
+
+    .private-message {
+        font-style: italic;
+        color: gray;
+    }
+
+    #message-input-container {
+        margin-top: 10px;
+    }
+
+    #users-list li {
+        cursor: pointer;
+    }
+</style>

@@ -1,0 +1,30 @@
+# ASP.NET Core
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+xunit.runner.json
+
+# Rider
+.idea/
+*.sln.iml
+
+# Visual Studio 2015 cache/options
+.vs/
+
+# Visual Studio Code
+.vscode/
+
+# Mac
+.DS_Store
+
+# Log files
+*.log

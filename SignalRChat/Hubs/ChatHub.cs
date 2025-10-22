@@ -47,7 +47,6 @@ namespace SignalRChat.Hubs
                 messages.Add(messageTuple);
 
                 await Clients.Client(receiverConnectionId).SendAsync("ReceiveMessage", sender, message, true, sender);
-                await Clients.Caller.SendAsync("ReceiveMessage", sender, message, true, receiver);
             }
         }
     }

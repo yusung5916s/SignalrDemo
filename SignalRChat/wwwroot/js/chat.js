@@ -7,6 +7,16 @@ const privateChatWindows = {};
 const unreadMessages = {};
 
 document.getElementById("join-button").addEventListener("click", (event) => {
+    joinChat();
+});
+
+document.getElementById("username-input").addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
+        joinChat();
+    }
+});
+
+function joinChat() {
     username = document.getElementById("username-input").value;
     if (username) {
         document.getElementById("username-container").style.display = "none";
@@ -15,17 +25,33 @@ document.getElementById("join-button").addEventListener("click", (event) => {
             return console.error(err.toString());
         });
     }
-    event.preventDefault();
-});
+}
+
+function addMessageToChat(list, user, message) {
+    const li = document.createElement("li");
+    li.className = "message " + (user === username ? "sent" : "received");
+
+    const messageContent = document.createElement("div");
+    messageContent.textContent = message;
+
+    if (user !== username) {
+        const sender = document.createElement("div");
+        sender.className = "sender";
+        sender.textContent = user;
+        li.appendChild(sender);
+    }
+
+    li.appendChild(messageContent);
+    list.appendChild(li);
+    list.scrollTop = list.scrollHeight;
+}
 
 connection.on("ReceiveMessage", (user, message, isPrivate, fromUser) => {
     if (isPrivate) {
         const otherUser = fromUser === username ? user : fromUser;
         const chatWindow = privateChatWindows[otherUser];
         if (chatWindow && chatWindow.style.display !== "none") {
-            const li = document.createElement("li");
-            li.textContent = `${user}: ${message}`;
-            chatWindow.querySelector(".private-messages-list").appendChild(li);
+            addMessageToChat(chatWindow.querySelector(".private-messages-list"), user, message);
         } else {
             if (!unreadMessages[otherUser]) {
                 unreadMessages[otherUser] = 0;
@@ -34,9 +60,7 @@ connection.on("ReceiveMessage", (user, message, isPrivate, fromUser) => {
             updateUserListNotifications();
         }
     } else {
-        const li = document.createElement("li");
-        li.textContent = `${user}: ${message}`;
-        document.getElementById("messages-list").appendChild(li);
+        addMessageToChat(document.getElementById("messages-list"), user, message);
     }
 });
 
@@ -76,13 +100,26 @@ function updateUserListNotifications() {
 }
 
 document.getElementById("send-button").addEventListener("click", (event) => {
-    const message = document.getElementById("message-input").value;
-    connection.invoke("SendMessage", username, message).catch((err) => {
-        return console.error(err.toString());
-    });
-    document.getElementById("message-input").value = "";
-    event.preventDefault();
+    sendMessage();
 });
+
+document.getElementById("message-input").addEventListener("keypress", function (e) {
+    if (e.key === "Enter") {
+        sendMessage();
+    }
+});
+
+function sendMessage() {
+    const messageInput = document.getElementById("message-input");
+    const message = messageInput.value;
+    if (message) {
+        connection.invoke("SendMessage", username, message).catch((err) => {
+            return console.error(err.toString());
+        });
+        addMessageToChat(document.getElementById("messages-list"), username, message);
+        messageInput.value = "";
+    }
+}
 
 function createPrivateChatWindow(user) {
     if (privateChatWindows[user]) {
@@ -115,14 +152,13 @@ function createPrivateChatWindow(user) {
     document.body.appendChild(chatWindow);
     privateChatWindows[user] = chatWindow;
 
+    const messagesList = chatWindow.querySelector(".private-messages-list");
+
     fetch(`/api/chathistory?user1=${username}&user2=${user}`)
         .then(response => response.json())
         .then(data => {
-            const messagesList = chatWindow.querySelector(".private-messages-list");
             data.forEach(item => {
-                const li = document.createElement("li");
-                li.textContent = `${item.item1}: ${item.item2}`;
-                messagesList.appendChild(li);
+                addMessageToChat(messagesList, item.item1, item.item2);
             });
         });
 
@@ -130,16 +166,21 @@ function createPrivateChatWindow(user) {
     const sendButton = chatWindow.querySelector(".send-private-message");
     const closeButton = chatWindow.querySelector(".close-private-chat");
 
-    sendButton.addEventListener("click", () => {
+    function sendPrivateMessage() {
         const message = messageInput.value;
         if (message) {
             connection.invoke("SendPrivateMessage", username, user, message).catch((err) => {
                 return console.error(err.toString());
             });
-            const li = document.createElement("li");
-            li.textContent = `${username}: ${message}`;
-            chatWindow.querySelector(".private-messages-list").appendChild(li);
+            addMessageToChat(messagesList, username, message);
             messageInput.value = "";
+        }
+    }
+
+    sendButton.addEventListener("click", sendPrivateMessage);
+    messageInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+            sendPrivateMessage();
         }
     });
 

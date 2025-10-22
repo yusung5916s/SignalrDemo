@@ -72,15 +72,31 @@
         flex-direction: column;
     }
 
-    #messages-list {
+    #messages-list, .private-messages-list {
         list-style-type: none;
-        padding: 0;
+        padding: 10px;
         margin: 0;
         overflow-y: auto;
         flex-grow: 1;
         border: 1px solid #eee;
-        padding: 10px;
         border-radius: 5px;
+    }
+
+    .message {
+        padding: 10px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        max-width: 80%;
+    }
+
+    .message.sent {
+        background-color: #dcf8c6;
+        align-self: flex-end;
+    }
+
+    .message.received {
+        background-color: #fff;
+        align-self: flex-start;
     }
 
     .private-message {

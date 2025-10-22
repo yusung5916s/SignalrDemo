@@ -4,6 +4,7 @@ const connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build(
 
 let username = "";
 const privateChatWindows = {};
+const unreadMessages = {};
 
 document.getElementById("join-button").addEventListener("click", (event) => {
     username = document.getElementById("username-input").value;
@@ -19,11 +20,18 @@ document.getElementById("join-button").addEventListener("click", (event) => {
 
 connection.on("ReceiveMessage", (user, message, isPrivate, fromUser) => {
     if (isPrivate) {
-        const chatWindow = privateChatWindows[fromUser] || privateChatWindows[user];
-        if (chatWindow) {
+        const otherUser = fromUser === username ? user : fromUser;
+        const chatWindow = privateChatWindows[otherUser];
+        if (chatWindow && chatWindow.style.display !== "none") {
             const li = document.createElement("li");
             li.textContent = `${user}: ${message}`;
             chatWindow.querySelector(".private-messages-list").appendChild(li);
+        } else {
+            if (!unreadMessages[otherUser]) {
+                unreadMessages[otherUser] = 0;
+            }
+            unreadMessages[otherUser]++;
+            updateUserListNotifications();
         }
     } else {
         const li = document.createElement("li");
@@ -40,12 +48,32 @@ connection.on("UpdateUserList", (users) => {
 
         const li = document.createElement("li");
         li.textContent = user;
+        li.dataset.username = user;
         li.addEventListener("dblclick", () => {
             createPrivateChatWindow(user);
         });
         usersList.appendChild(li);
     });
+    updateUserListNotifications();
 });
+
+function updateUserListNotifications() {
+    const usersList = document.getElementById("users-list");
+    for (const user in unreadMessages) {
+        if (unreadMessages[user] > 0) {
+            const userLi = usersList.querySelector(`li[data-username="${user}"]`);
+            if (userLi) {
+                let notification = userLi.querySelector(".notification");
+                if (!notification) {
+                    notification = document.createElement("span");
+                    notification.className = "notification";
+                    userLi.appendChild(notification);
+                }
+                notification.textContent = unreadMessages[user];
+            }
+        }
+    }
+}
 
 document.getElementById("send-button").addEventListener("click", (event) => {
     const message = document.getElementById("message-input").value;
@@ -59,6 +87,14 @@ document.getElementById("send-button").addEventListener("click", (event) => {
 function createPrivateChatWindow(user) {
     if (privateChatWindows[user]) {
         privateChatWindows[user].style.display = "block";
+        unreadMessages[user] = 0;
+        const userLi = document.getElementById("users-list").querySelector(`li[data-username="${user}"]`);
+        if (userLi) {
+            const notification = userLi.querySelector(".notification");
+            if (notification) {
+                notification.remove();
+            }
+        }
         return;
     }
 
@@ -79,6 +115,17 @@ function createPrivateChatWindow(user) {
     document.body.appendChild(chatWindow);
     privateChatWindows[user] = chatWindow;
 
+    fetch(`/api/chathistory?user1=${username}&user2=${user}`)
+        .then(response => response.json())
+        .then(data => {
+            const messagesList = chatWindow.querySelector(".private-messages-list");
+            data.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = `${item.item1}: ${item.item2}`;
+                messagesList.appendChild(li);
+            });
+        });
+
     const messageInput = chatWindow.querySelector(".private-message-input");
     const sendButton = chatWindow.querySelector(".send-private-message");
     const closeButton = chatWindow.querySelector(".close-private-chat");
@@ -89,6 +136,9 @@ function createPrivateChatWindow(user) {
             connection.invoke("SendPrivateMessage", username, user, message).catch((err) => {
                 return console.error(err.toString());
             });
+            const li = document.createElement("li");
+            li.textContent = `${username}: ${message}`;
+            chatWindow.querySelector(".private-messages-list").appendChild(li);
             messageInput.value = "";
         }
     });
@@ -96,6 +146,15 @@ function createPrivateChatWindow(user) {
     closeButton.addEventListener("click", () => {
         chatWindow.style.display = "none";
     });
+
+    unreadMessages[user] = 0;
+    const userLi = document.getElementById("users-list").querySelector(`li[data-username="${user}"]`);
+    if (userLi) {
+        const notification = userLi.querySelector(".notification");
+        if (notification) {
+            notification.remove();
+        }
+    }
 }
 
 connection.start().catch((err) => {
